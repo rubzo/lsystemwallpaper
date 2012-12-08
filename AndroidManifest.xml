@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="eu.whrl.hilbertcurvewp"
+    android:versionCode="1"
+    android:versionName="1.0" >
+
+    <uses-sdk android:minSdkVersion="16" />
+    
+    <uses-feature
+        android:name="android.software.live_wallpaper"
+        android:required="true" >
+    </uses-feature>
+    
+    <application
+        android:icon="@drawable/lsystem_icon"
+        android:label="@string/app_name" >
+        <service
+            android:name="eu.whrl.lsystemwallpaper.LSystemDrawingService"
+            android:enabled="true"
+            android:label="L-System Wallpaper"
+            android:permission="android.permission.BIND_WALLPAPER" 
+            android:theme="@android:style/Theme.Light.WallpaperSettings" >
+            <intent-filter>
+                <action android:name="android.service.wallpaper.WallpaperService" >
+                </action>
+            </intent-filter>
+
+            <meta-data
+                android:name="android.service.wallpaper"
+                android:resource="@xml/mywallpaper" >
+            </meta-data>
+        </service>
+
+        <activity
+            android:name=".MyPreferencesActivity"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:theme="@android:style/Theme.Light.WallpaperSettings" >
+        </activity>
+        <activity
+            android:name="eu.whrl.lsystemwallpaper.SetWallpaperActivity"
+            android:label="@string/app_name"
+            android:theme="@android:style/Theme.Light.WallpaperSettings" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>
