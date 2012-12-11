@@ -63,7 +63,12 @@ public class LSystemDrawingService extends WallpaperService {
 			headPaint.setStyle(Paint.Style.STROKE);
 			headPaint.setStrokeWidth(5f);
 			
-			lsystem = new LSystem(5);
+			String[] functions = new String[3];
+			functions[0] = "f::20";
+			functions[1] = "l:+rf-lfl-fr+:0";
+			functions[2] = "r:-lf+rfr+fl-:0"; 
+			lsystem = new LSystem(5, 90.0f, "l", functions);
+			
 			olderLines = new ArrayList<Line>();
 			
 			originX = x;

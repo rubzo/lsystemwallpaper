@@ -1,6 +1,13 @@
 package eu.whrl.lsystemwallpaper;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public class LSystem {
+	
+	/*
+	 * The commands.
+	 */
 	abstract class Command {
 		public abstract void print();	
 	}
@@ -26,19 +33,98 @@ public class LSystem {
 		}
 	}
 	
-	public Command[] commands;
-	
-	public LSystem(int n) {
-		if (n <= 0) {
-			n = 1;
-		}
-		produceCommands(n);
+	class Function {
+		public String name;
+		public Command[] body;
+		public float baseMovement;
+		public boolean alwaysBase;
 	}
 	
-	public void produceCommands(int n) {
-		commands = new Command[1];
-		commands[0] = new Expand("l");
-		expand(n);
+	/*
+	 * Member variables.
+	 */
+	public Command[] commands;
+	private Map<String,Function> functionStore;
+	private float turnAngle;
+	private String seed;
+	
+	/*
+	 * Constructor.
+	 */
+	public LSystem(int iterations, float angle, String seed, String[] functions) {
+		
+		if (iterations <= 0) {
+			iterations = 1;
+		}
+		
+		functionStore = new HashMap<String,Function>();
+		
+		turnAngle = angle;
+		this.seed = seed;
+		
+		for (String function : functions) {
+			readFunction(function);
+		}
+		
+		produceCommands(iterations);
+	}
+	
+	/*
+	 * Methods.
+	 */
+	private Command[] readCommands(String commandString) {
+		Command[] body = new Command[commandString.length()];
+		int i = 0;
+		for (char c : commandString.toCharArray()) {
+			switch (c) {
+			case '+':
+				body[i] = new Turn(turnAngle);
+				break;
+			case '-':
+				body[i] = new Turn(-turnAngle);
+				break;
+			default:
+				body[i] = new Expand("" + c);
+				break;
+			}
+			i++;
+		}
+		return body;
+	}
+	
+	private void readFunction(String function) {
+		
+		String[] components = function.split(":");
+		
+		Function func = new Function();
+		
+		func.name = components[0];
+		func.body = readCommands(components[1]);
+		func.baseMovement = Integer.parseInt(components[2]);
+		func.alwaysBase = false;
+		if (func.body.length == 0) {
+			func.alwaysBase = true;
+		}
+		
+		functionStore.put(func.name, func);
+	}
+	
+	
+	public void produceCommands(int iterations) {
+		commands = readCommands(seed); 
+		expand(iterations);
+	}
+	
+	private Command[] fetchFromFunctionStore(String name, int n) {
+		Function function = functionStore.get(name);
+		
+		if (n == 0 || function.alwaysBase) {
+			Command[] newCommands = new Command[1];
+			newCommands[0] = new Move(function.baseMovement);
+			return newCommands;
+		}
+		
+		return function.body;
 	}
 	
 	private void expand(int n) {
@@ -46,20 +132,11 @@ public class LSystem {
 		
 		while (i < commands.length) {
 			
-			Command c = commands[i];
+			Command command = commands[i];
 			
-			if (c instanceof Expand) {
-				Command[] newCommands = null;
-				if (((Expand) c).name.equals("l")) {
-					newCommands = l(n);
-				} else if (((Expand) c).name.equals("r")) {
-					newCommands = r(n);
-				} else if (((Expand) c).name.equals("f")) {
-					newCommands = f(n);
-				}
-
+			if (command instanceof Expand) {
+				Command[] newCommands = fetchFromFunctionStore(((Expand)command).name, n);
 				insertNewCommands(i, newCommands);
-				
 				i += newCommands.length - 1;
 			}
 			
@@ -69,58 +146,6 @@ public class LSystem {
 		if (n > 0) {
 			expand(n-1);
 		}
-	}
-	
-	private Command[] l(int n) {
-		if (n == 0) {
-			Command[] newCommands = new Command[1];
-			newCommands[0] = new Move(0.0f);
-			return newCommands;
-		}
-		
-		Command[] newCommands = new Command[11];
-		newCommands[0] = new Turn(90.0f);
-		newCommands[1] = new Expand("r");
-		newCommands[2] = new Expand("f");
-		newCommands[3] = new Turn(-90.0f);
-		newCommands[4] = new Expand("l");
-		newCommands[5] = new Expand("f");
-		newCommands[6] = new Expand("l");
-		newCommands[7] = new Turn(-90.0f);
-		newCommands[8] = new Expand("f");
-		newCommands[9] = new Expand("r");
-		newCommands[10] = new Turn(90.0f);
-
-		return newCommands;
-	}
-	
-	private Command[] r(int n) {
-		if (n == 0) {
-			Command[] newCommands = new Command[1];
-			newCommands[0] = new Move(0.0f);
-			return newCommands;
-		}
-		
-		Command[] newCommands = new Command[11];
-		newCommands[0] = new Turn(-90.0f);
-		newCommands[1] = new Expand("l");
-		newCommands[2] = new Expand("f");
-		newCommands[3] = new Turn(90.0f);
-		newCommands[4] = new Expand("r");
-		newCommands[5] = new Expand("f");
-		newCommands[6] = new Expand("r");
-		newCommands[7] = new Turn(90.0f);
-		newCommands[8] = new Expand("f");
-		newCommands[9] = new Expand("l");
-		newCommands[10] = new Turn(-90.0f);
-
-		return newCommands;
-	}
-	
-	private Command[] f(int n) {
-		Command[] newCommands = new Command[1];
-		newCommands[0] = new Move(20.0f);
-		return newCommands;
 	}
 	
 	private void insertNewCommands(int insertionPoint, Command[] newCommands) {
