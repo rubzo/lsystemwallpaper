@@ -1,11 +1,11 @@
 package eu.whrl.lsystemwallpaper;
 
 import java.util.ArrayList;
-import java.util.List;
 
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Path;
 import android.os.Handler;
 import android.service.wallpaper.WallpaperService;
 import android.view.MotionEvent;
@@ -48,7 +48,7 @@ public class LSystemDrawingService extends WallpaperService {
 		private float originX;
 		private float originY;
 		
-		List<Line> olderLines;
+		private Path tailLine;
 		
 		DrawingState state = DrawingState.DRAW;
 		
@@ -69,10 +69,11 @@ public class LSystemDrawingService extends WallpaperService {
 			functions[2] = "r:-lf+rfr+fl-:0"; 
 			lsystem = new LSystem(5, 90.0f, "l", functions);
 			
-			olderLines = new ArrayList<Line>();
-			
 			originX = x;
 			originY = y;
+			
+			tailLine = new Path();
+			tailLine.moveTo(originX, originY);
 			
 			handler.post(drawRunner);
 		}
@@ -129,9 +130,7 @@ public class LSystemDrawingService extends WallpaperService {
 		}
 		
 		private void drawOlderLines(Canvas canvas) {
-			for (Line line : olderLines) {
-				canvas.drawLine(line.x, line.y, line.nx, line.ny, tailPaint);
-			}
+			canvas.drawPath(tailLine, tailPaint);
 		}
 		
 		private void fadeLSystem(Canvas canvas) {
@@ -186,8 +185,7 @@ public class LSystemDrawingService extends WallpaperService {
 			// Draw our new line
 			canvas.drawLine(x, y, newX, newY, headPaint);
 			
-			// Add this line to all the other lines we need to draw.
-			olderLines.add(new Line(x, y, newX, newY));
+			tailLine.lineTo(newX, newY);
 			
 			// Update our position
 			x = newX;
@@ -206,7 +204,8 @@ public class LSystemDrawingService extends WallpaperService {
 		}
 		
 		private void changeToDraw() {
-			olderLines.clear();
+			tailLine = new Path();
+			tailLine.moveTo(originX, originY);
 			x = originX;
 			y = originY;
 			tailPaint.setAlpha(255);
