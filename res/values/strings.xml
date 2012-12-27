@@ -2,5 +2,7 @@
 <resources>
     <string name="app_name">L-System Wallpaper</string>
     <string name="wallpaper_description">L-System Live Wallpaper</string>
+    <string name="launcher_description">The L-System Live Wallpaper - create pretty backgrounds using L-Systems!</string>
+    <string name="launcher_button_text">Install Live Wallpaper</string>
 
 </resources>

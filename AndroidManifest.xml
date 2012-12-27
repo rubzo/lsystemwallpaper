@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="eu.whrl.hilbertcurvewp"
+    package="eu.whrl.lsystemwallpaper"
     android:versionCode="1"
     android:versionName="1.0" >
 
@@ -34,13 +34,12 @@
         <activity
             android:name=".MyPreferencesActivity"
             android:exported="true"
-            android:label="@string/app_name"
-            android:theme="@android:style/Theme.Light.WallpaperSettings" >
+            android:label="@string/app_name">
         </activity>
+        
         <activity
-            android:name="eu.whrl.lsystemwallpaper.SetWallpaperActivity"
-            android:label="@string/app_name"
-            android:theme="@android:style/Theme.Light.WallpaperSettings" >
+            android:name="eu.whrl.lsystemwallpaper.WallpaperLauncherActivity"
+            android:label="@string/app_name">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

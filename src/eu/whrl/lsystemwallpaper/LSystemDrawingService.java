@@ -1,11 +1,10 @@
 package eu.whrl.lsystemwallpaper;
 
-import java.util.ArrayList;
-
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.os.AsyncTask;
 import android.os.Handler;
 import android.service.wallpaper.WallpaperService;
 import android.view.MotionEvent;
@@ -19,6 +18,8 @@ public class LSystemDrawingService extends WallpaperService {
 	}
 	
 	public enum DrawingState {
+		CALCULATE,
+		ERROR,
 		DRAW,
 		FADE
 	}
@@ -50,9 +51,37 @@ public class LSystemDrawingService extends WallpaperService {
 		
 		private Path tailLine;
 		
-		DrawingState state = DrawingState.DRAW;
+		DrawingState state = DrawingState.CALCULATE;
+		private int calculationCount = 0;
 		
-		public LSystemDrawingEngine() {			
+		class LSystemGenerator extends AsyncTask<LSystemDescription,Void,LSystem> {
+
+			@Override
+			protected LSystem doInBackground(LSystemDescription... params) {
+				if (params.length == 1) { 
+					LSystemDescription d = params[0];
+					LSystem lsystem = new LSystem(d.iterations, 
+							d.turnAngle, 
+							d.startState, 
+							d.functions);
+					return lsystem;
+				}
+				return null;
+			}
+
+			@Override
+			protected void onPostExecute(LSystem l) {
+				if (l != null) {
+					lsystem = l;
+					state = DrawingState.DRAW;
+				} else {
+					state = DrawingState.ERROR;
+				}
+			}
+		}
+		
+		public LSystemDrawingEngine() {		
+			
 			tailPaint.setAntiAlias(true);
 			tailPaint.setColor(Color.GRAY);
 			tailPaint.setStyle(Paint.Style.STROKE);
@@ -63,11 +92,17 @@ public class LSystemDrawingService extends WallpaperService {
 			headPaint.setStyle(Paint.Style.STROKE);
 			headPaint.setStrokeWidth(5f);
 			
-			String[] functions = new String[3];
-			functions[0] = "f::20";
-			functions[1] = "l:+rf-lfl-fr+:0";
-			functions[2] = "r:-lf+rfr+fl-:0"; 
-			lsystem = new LSystem(5, 90.0f, "l", functions);
+			LSystemDescription lsDesc = new LSystemDescription();
+			lsDesc.name = "hilbert";
+			lsDesc.functions = new String[3];
+			lsDesc.functions[0] = "f::20";
+			lsDesc.functions[1] = "l:+rf-lfl-fr+:0";
+			lsDesc.functions[2] = "r:-lf+rfr+fl-:0";
+			lsDesc.startState = "l";
+			lsDesc.iterations = 5;
+			lsDesc.turnAngle = 90.0f;
+			
+			new LSystemGenerator().execute(lsDesc);
 			
 			originX = x;
 			originY = y;
@@ -113,7 +148,10 @@ public class LSystemDrawingService extends WallpaperService {
 				canvas = holder.lockCanvas();
 				if (canvas != null) {
 					canvas.drawColor(Color.BLACK);
-					if (state == DrawingState.DRAW) {
+					if (state == DrawingState.CALCULATE) {
+						canvas.drawLine(50, 200, 50, 200 + calculationCount, headPaint);
+						calculationCount++;
+					} else if (state == DrawingState.DRAW) {
 						drawLSystem(canvas);
 					} else if (state == DrawingState.FADE) {
 						fadeLSystem(canvas);

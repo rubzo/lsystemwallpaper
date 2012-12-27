@@ -6,11 +6,13 @@ import android.content.ComponentName;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
+import eu.whrl.lsystemwallpaper.R;
 
-public class SetWallpaperActivity extends Activity {
+public class WallpaperLauncherActivity extends Activity {
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
   }
 
   public void onClick(View view) {
