@@ -9,27 +9,37 @@ public class LSystem {
 	 * The commands.
 	 */
 	abstract class Command {
-		public abstract void print();	
+		public abstract String print();	
 	}
 	class Move extends Command {
 		public float dist;
 		public Move(float d) { dist = d; }
-		public void print() {
-			System.out.println("Move " + dist);
+		public String print() {
+			return "Move " + dist;
 		}
 	}
 	class Turn extends Command {
 		public float angle;
 		public Turn(float a) { angle = a; }
-		public void print() {
-			System.out.println("Turn " + angle);
+		public String print() {
+			return "Turn " + angle;
 		}
 	}
 	class Expand extends Command {
 		public String name;
 		public Expand(String n) { name = n; }
-		public void print() {
-			System.out.println("Expand " + name);
+		public String print() {
+			return "Expand " + name;
+		}
+	}
+	class BranchStart extends Command {
+		public String print() {
+			return "Branch ( ";
+		}
+	}
+	class BranchEnd extends Command {
+		public String print() {
+			return ")";
 		}
 	}
 	
@@ -82,6 +92,12 @@ public class LSystem {
 				break;
 			case '-':
 				body[i] = new Turn(-turnAngle);
+				break;
+			case '[':
+				body[i] = new BranchStart();
+				break;
+			case ']':
+				body[i] = new BranchEnd();
 				break;
 			default:
 				body[i] = new Expand("" + c);

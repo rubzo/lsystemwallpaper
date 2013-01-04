@@ -1,5 +1,8 @@
 package eu.whrl.lsystemwallpaper;
 
+import java.util.LinkedList;
+import java.util.List;
+
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -7,8 +10,28 @@ import android.graphics.Path;
 import android.os.AsyncTask;
 import android.os.Handler;
 import android.service.wallpaper.WallpaperService;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
+
+class DrawingPosition {
+	float x;
+	float y;
+	float angle;
+	public DrawingPosition() {
+		x = 0;
+		y = 0;
+		angle = 0;
+	}
+	public DrawingPosition(float x, float y, float a) {
+		this.x = x;
+		this.y = y;
+		this.angle = a;
+	}
+	public DrawingPosition copy() {
+		return new DrawingPosition(x, y, angle);
+	}
+}
 
 public class LSystemDrawingService extends WallpaperService {
 
@@ -35,24 +58,24 @@ public class LSystemDrawingService extends WallpaperService {
 
 		};
 		
-		private Paint tailPaint = new Paint();
-		private Paint headPaint = new Paint();
-		
 		private boolean visible = true;
 
 		private LSystem lsystem = null;
-		private float x = 50.0f;
-		private float y = 200.0f;
-		private float angle = 0.0f;
 		private int currentCommand = 0;
 		
-		private float originX;
-		private float originY;
+		private DrawingPosition drawPos = new DrawingPosition(50.0f, 200.0f, 0.0f);
+		private List<DrawingPosition> drawPosStack = null;
 		
-		private Path tailLine;
+		private DrawingPosition originDrawPos = drawPos.copy();
+		
+		private List<Path> tailLines;
+		private Path currentTailLine;
 		
 		DrawingState state = DrawingState.CALCULATE;
 		private int calculationCount = 0;
+		
+		private Paint tailPaint = new Paint();
+		private Paint headPaint = new Paint();
 		
 		class LSystemGenerator extends AsyncTask<LSystemDescription,Void,LSystem> {
 
@@ -82,6 +105,8 @@ public class LSystemDrawingService extends WallpaperService {
 		
 		public LSystemDrawingEngine() {		
 			
+			drawPosStack = new LinkedList<DrawingPosition>();
+			
 			tailPaint.setAntiAlias(true);
 			tailPaint.setColor(Color.GRAY);
 			tailPaint.setStyle(Paint.Style.STROKE);
@@ -102,13 +127,24 @@ public class LSystemDrawingService extends WallpaperService {
 			lsDesc.iterations = 5;
 			lsDesc.turnAngle = 90.0f;
 			
+			/*
+			LSystemDescription lsDesc = new LSystemDescription();
+			lsDesc.name = "tree";
+			lsDesc.functions = new String[2];
+			lsDesc.functions[0] = "f:g[-f][+f][gf]:10";
+			lsDesc.functions[1] = "g:gg:10";
+			lsDesc.startState = "f";
+			lsDesc.iterations = 5;
+			lsDesc.turnAngle = 45.0f;
+			*/
+			
 			new LSystemGenerator().execute(lsDesc);
 			
-			originX = x;
-			originY = y;
+			currentTailLine = new Path();
+			currentTailLine.moveTo(drawPos.x, drawPos.y);
 			
-			tailLine = new Path();
-			tailLine.moveTo(originX, originY);
+			tailLines = new LinkedList<Path>();
+			tailLines.add(currentTailLine);
 			
 			handler.post(drawRunner);
 		}
@@ -168,7 +204,9 @@ public class LSystemDrawingService extends WallpaperService {
 		}
 		
 		private void drawOlderLines(Canvas canvas) {
-			canvas.drawPath(tailLine, tailPaint);
+			for (Path tailLine : tailLines) {
+				canvas.drawPath(tailLine, tailPaint);
+			}
 		}
 		
 		private void fadeLSystem(Canvas canvas) {
@@ -185,8 +223,8 @@ public class LSystemDrawingService extends WallpaperService {
 			
 			drawOlderLines(canvas);
 			
-			float newX = x;
-			float newY = y;
+			float newX = drawPos.x;
+			float newY = drawPos.y;
 			
 			LSystem.Command cmd = lsystem.commands[currentCommand];
 			
@@ -202,7 +240,22 @@ public class LSystemDrawingService extends WallpaperService {
 				
 				if (!found) {
 					if (cmd instanceof LSystem.Turn) {
-						angle += ((LSystem.Turn)cmd).angle;
+						drawPos.angle += ((LSystem.Turn)cmd).angle;
+					}
+					
+					if (cmd instanceof LSystem.BranchStart) {
+						drawPosStack.add(drawPos.copy());
+					}
+					
+					if (cmd instanceof LSystem.BranchEnd) {
+						if (drawPosStack.size() > 0) {
+							drawPos = drawPosStack.remove(drawPosStack.size()-1);
+							currentTailLine = new Path();
+							currentTailLine.moveTo(drawPos.x, drawPos.y);
+							tailLines.add(currentTailLine);
+						} else {
+							Log.w("LSystem", "Encountered branch end with no matching branch start, skipping.");
+						}
 					}
 
 					currentCommand++;
@@ -216,18 +269,18 @@ public class LSystemDrawingService extends WallpaperService {
 			
 			// Calculate the destination of the move.
 			float distance = ((LSystem.Move)cmd).dist;
-			double radians = Math.toRadians(angle);
-			newX = x + (float) (Math.cos(radians)*distance);
-			newY = y + (float) (Math.sin(radians)*distance);
+			double radians = Math.toRadians(drawPos.angle);
+			newX = drawPos.x + (float) (Math.cos(radians)*distance);
+			newY = drawPos.y + (float) (Math.sin(radians)*distance);
 			
 			// Draw our new line
-			canvas.drawLine(x, y, newX, newY, headPaint);
+			canvas.drawLine(drawPos.x, drawPos.y, newX, newY, headPaint);
 			
-			tailLine.lineTo(newX, newY);
+			currentTailLine.lineTo(newX, newY);
 			
 			// Update our position
-			x = newX;
-			y = newY;
+			drawPos.x = newX;
+			drawPos.y = newY;
 			
 			// Move onto the next command.
 			currentCommand++;
@@ -242,10 +295,11 @@ public class LSystemDrawingService extends WallpaperService {
 		}
 		
 		private void changeToDraw() {
-			tailLine = new Path();
-			tailLine.moveTo(originX, originY);
-			x = originX;
-			y = originY;
+			tailLines.clear();
+			currentTailLine = new Path();
+			currentTailLine.moveTo(originDrawPos.x, originDrawPos.x);
+			tailLines.add(currentTailLine);
+			drawPos = originDrawPos.copy();
 			tailPaint.setAlpha(255);
 			state = DrawingState.DRAW;
 		}
