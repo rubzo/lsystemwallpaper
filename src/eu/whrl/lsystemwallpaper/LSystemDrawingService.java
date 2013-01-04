@@ -3,16 +3,20 @@ package eu.whrl.lsystemwallpaper;
 import java.util.LinkedList;
 import java.util.List;
 
+import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.graphics.Point;
 import android.os.AsyncTask;
 import android.os.Handler;
 import android.service.wallpaper.WallpaperService;
 import android.util.Log;
+import android.view.Display;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
+import android.view.WindowManager;
 
 class DrawingPosition {
 	float x;
@@ -63,10 +67,10 @@ public class LSystemDrawingService extends WallpaperService {
 		private LSystem lsystem = null;
 		private int currentCommand = 0;
 		
-		private DrawingPosition drawPos = new DrawingPosition(50.0f, 200.0f, 0.0f);
-		private List<DrawingPosition> drawPosStack = null;
+		private DrawingPosition drawPos = null;
+		private List<DrawingPosition> drawPosStack = new LinkedList<DrawingPosition>();;
 		
-		private DrawingPosition originDrawPos = drawPos.copy();
+		private DrawingPosition originDrawPos = null;
 		
 		private List<Path> tailLines;
 		private Path currentTailLine;
@@ -76,6 +80,11 @@ public class LSystemDrawingService extends WallpaperService {
 		
 		private Paint tailPaint = new Paint();
 		private Paint headPaint = new Paint();
+		
+		private int savedWidth;
+		private float scalingFactor;
+		
+		private LSystemDescription lsDesc;
 		
 		class LSystemGenerator extends AsyncTask<LSystemDescription,Void,LSystem> {
 
@@ -96,6 +105,7 @@ public class LSystemDrawingService extends WallpaperService {
 			protected void onPostExecute(LSystem l) {
 				if (l != null) {
 					lsystem = l;
+					prepareForDrawing();
 					state = DrawingState.DRAW;
 				} else {
 					state = DrawingState.ERROR;
@@ -103,10 +113,13 @@ public class LSystemDrawingService extends WallpaperService {
 			}
 		}
 		
-		public LSystemDrawingEngine() {		
-			
-			drawPosStack = new LinkedList<DrawingPosition>();
-			
+		public LSystemDrawingEngine() {					
+			getPreferences();
+			new LSystemGenerator().execute(lsDesc);
+			handler.post(drawRunner);
+		}
+		
+		private void getPreferences() {
 			tailPaint.setAntiAlias(true);
 			tailPaint.setColor(Color.GRAY);
 			tailPaint.setStyle(Paint.Style.STROKE);
@@ -117,7 +130,7 @@ public class LSystemDrawingService extends WallpaperService {
 			headPaint.setStyle(Paint.Style.STROKE);
 			headPaint.setStrokeWidth(5f);
 			
-			LSystemDescription lsDesc = new LSystemDescription();
+			lsDesc = new LSystemDescription();
 			lsDesc.name = "hilbert";
 			lsDesc.functions = new String[3];
 			lsDesc.functions[0] = "f::20";
@@ -137,16 +150,6 @@ public class LSystemDrawingService extends WallpaperService {
 			lsDesc.iterations = 5;
 			lsDesc.turnAngle = 45.0f;
 			*/
-			
-			new LSystemGenerator().execute(lsDesc);
-			
-			currentTailLine = new Path();
-			currentTailLine.moveTo(drawPos.x, drawPos.y);
-			
-			tailLines = new LinkedList<Path>();
-			tailLines.add(currentTailLine);
-			
-			handler.post(drawRunner);
 		}
 
 		@Override
@@ -170,6 +173,7 @@ public class LSystemDrawingService extends WallpaperService {
 		public void onSurfaceChanged(SurfaceHolder holder, int format,
 				int width, int height) {
 			super.onSurfaceChanged(holder, format, width, height);
+			savedWidth = width;
 		}
 
 		@Override
@@ -212,7 +216,7 @@ public class LSystemDrawingService extends WallpaperService {
 		private void fadeLSystem(Canvas canvas) {
 			int newAlpha = tailPaint.getAlpha() - 16;
 			if (newAlpha < 0) {
-				changeToDraw();
+				changeToDrawState();
 				return;
 			}
 			tailPaint.setAlpha(newAlpha);
@@ -260,7 +264,7 @@ public class LSystemDrawingService extends WallpaperService {
 
 					currentCommand++;
 					if (currentCommand == lsystem.commands.length) {
-						changeToFade();
+						changeToFadeState();
 						return;
 					}
 					cmd = lsystem.commands[currentCommand];
@@ -268,7 +272,7 @@ public class LSystemDrawingService extends WallpaperService {
 			}
 			
 			// Calculate the destination of the move.
-			float distance = ((LSystem.Move)cmd).dist;
+			float distance = ((LSystem.Move)cmd).dist * scalingFactor;
 			double radians = Math.toRadians(drawPos.angle);
 			newX = drawPos.x + (float) (Math.cos(radians)*distance);
 			newY = drawPos.y + (float) (Math.sin(radians)*distance);
@@ -285,16 +289,16 @@ public class LSystemDrawingService extends WallpaperService {
 			// Move onto the next command.
 			currentCommand++;
 			if (currentCommand == lsystem.commands.length) {
-				changeToFade();
+				changeToFadeState();
 			}
 		}
 		
-		private void changeToFade() {
+		private void changeToFadeState() {
 			currentCommand = 0;
 			state = DrawingState.FADE;
 		}
 		
-		private void changeToDraw() {
+		private void changeToDrawState() {
 			tailLines.clear();
 			currentTailLine = new Path();
 			currentTailLine.moveTo(originDrawPos.x, originDrawPos.y);
@@ -302,6 +306,120 @@ public class LSystemDrawingService extends WallpaperService {
 			drawPos = originDrawPos.copy();
 			tailPaint.setAlpha(255);
 			state = DrawingState.DRAW;
+		}
+		
+		private void prepareForDrawing() {	
+			// First thing we must do is run through all the commands ahead of time,
+			// and work out how much space we need to draw the L-System
+			DrawingPosition fakeDrawPos = new DrawingPosition(0, 0, 0);
+			List<DrawingPosition> fakeDrawPosStack = new LinkedList<DrawingPosition>();
+			int fakeCurrentCommand = 0;
+			
+			// The BB corners
+			DrawingPosition tlBound = new DrawingPosition(0, 0, 0);
+			DrawingPosition trBound = new DrawingPosition(0, 0, 0);
+			DrawingPosition blBound = new DrawingPosition(0, 0, 0);
+			DrawingPosition brBound = new DrawingPosition(0, 0, 0);
+
+			// Go through all the commands...
+			while (fakeCurrentCommand != lsystem.commands.length) {
+			
+				LSystem.Command cmd = lsystem.commands[fakeCurrentCommand];
+
+				boolean found = false;
+
+				// Find the next command that is a move that isn't distance 0.
+				while (!found) {
+					if ((cmd instanceof LSystem.Move)) {
+						if (((LSystem.Move)cmd).dist > 0.0f) {
+							found = true;
+						}
+					}
+
+					if (!found) {
+						if (cmd instanceof LSystem.Turn) {
+							fakeDrawPos.angle += ((LSystem.Turn)cmd).angle;
+						}
+
+						if (cmd instanceof LSystem.BranchStart) {
+							fakeDrawPosStack.add(fakeDrawPos.copy());
+						}
+
+						if (cmd instanceof LSystem.BranchEnd) {
+							if (fakeDrawPosStack.size() > 0) {
+								fakeDrawPos = fakeDrawPosStack.remove(fakeDrawPosStack.size()-1);
+							}
+						}
+
+						fakeCurrentCommand++;
+						if (fakeCurrentCommand == lsystem.commands.length) {
+							found = true;
+						} else {
+							cmd = lsystem.commands[fakeCurrentCommand];
+						}
+					}
+				}
+
+				// Are we finished "drawing" yet?
+				if (fakeCurrentCommand != lsystem.commands.length) {
+					// Calculate the destination of the move.
+					float distance = ((LSystem.Move)cmd).dist;
+					double radians = Math.toRadians(fakeDrawPos.angle);
+					fakeDrawPos.x += (float) (Math.cos(radians)*distance);
+					fakeDrawPos.y += (float) (Math.sin(radians)*distance);
+
+					if (fakeDrawPos.x < tlBound.x) {
+						tlBound.x = fakeDrawPos.x;
+						blBound.x = fakeDrawPos.x;
+					}
+					if (fakeDrawPos.y < tlBound.y) {
+						tlBound.y = fakeDrawPos.y;
+						trBound.y = fakeDrawPos.y;
+					}
+
+					if (fakeDrawPos.x > trBound.x) {
+						trBound.x = fakeDrawPos.x;
+						brBound.x = fakeDrawPos.x;
+					}
+					if (fakeDrawPos.y > blBound.y) {
+						blBound.y = fakeDrawPos.y;
+						brBound.y = fakeDrawPos.y;
+					}
+
+					// Move onto the next command.
+					fakeCurrentCommand++;
+				}
+			}
+			
+			// Now we calculate the bounds
+			float xLength = trBound.x - tlBound.x;
+			float yLength = tlBound.y - blBound.y;
+			
+			// Make 'em square
+			if (xLength > yLength) {
+				yLength = xLength;
+			} else if (yLength > xLength) {
+				xLength = yLength;
+			}
+			
+			// Calculate origin point as ratio of the bounding box
+			float originX = (-tlBound.x) / xLength;
+			float originY = (-tlBound.y) / yLength;
+			
+			// Set our drawing positions
+			drawPos = new DrawingPosition(50.0f + (originX * (savedWidth-100)), 
+					200.0f + (originY * (savedWidth-100)), 
+					0.0f);
+			originDrawPos = drawPos.copy();
+			
+			// Calculate our scaling factor
+			scalingFactor = (savedWidth-100) / xLength;
+			
+			// Finally, add the tail lines
+			currentTailLine = new Path();
+			currentTailLine.moveTo(drawPos.x, drawPos.y);
+			tailLines = new LinkedList<Path>();
+			tailLines.add(currentTailLine);
 		}
 	} 
 }

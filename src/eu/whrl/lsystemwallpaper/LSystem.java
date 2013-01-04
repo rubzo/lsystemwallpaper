@@ -46,7 +46,7 @@ public class LSystem {
 	class Function {
 		public String name;
 		public Command[] body;
-		public float baseMovement;
+		public Command[] baseCommand;
 		public boolean alwaysBase;
 	}
 	
@@ -116,7 +116,8 @@ public class LSystem {
 		
 		func.name = components[0];
 		func.body = readCommands(components[1]);
-		func.baseMovement = Integer.parseInt(components[2]);
+		func.baseCommand = new Command[1];
+		func.baseCommand[0] = new Move(Integer.parseInt(components[2]));
 		func.alwaysBase = false;
 		if (func.body.length == 0) {
 			func.alwaysBase = true;
@@ -135,9 +136,7 @@ public class LSystem {
 		Function function = functionStore.get(name);
 		
 		if (n == 0 || function.alwaysBase) {
-			Command[] newCommands = new Command[1];
-			newCommands[0] = new Move(function.baseMovement);
-			return newCommands;
+			return function.baseCommand;
 		}
 		
 		return function.body;
