@@ -297,7 +297,7 @@ public class LSystemDrawingService extends WallpaperService {
 		private void changeToDraw() {
 			tailLines.clear();
 			currentTailLine = new Path();
-			currentTailLine.moveTo(originDrawPos.x, originDrawPos.x);
+			currentTailLine.moveTo(originDrawPos.x, originDrawPos.y);
 			tailLines.add(currentTailLine);
 			drawPos = originDrawPos.copy();
 			tailPaint.setAlpha(255);
