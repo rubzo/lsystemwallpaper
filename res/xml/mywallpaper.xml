@@ -3,4 +3,4 @@
   xmlns:android="http://schemas.android.com/apk/res/android"
   android:thumbnail="@drawable/lsystem_icon"
   android:description="@string/wallpaper_description"  
-  android:settingsActivity="eu.whrl.lsystemwallpaper.MyPreferencesActivity"/>
+  android:settingsActivity="eu.whrl.lsystemwallpaper.WallpaperPreferencesActivity"/>

@@ -3,20 +3,18 @@ package eu.whrl.lsystemwallpaper;
 import java.util.LinkedList;
 import java.util.List;
 
-import android.content.Context;
+import android.content.SharedPreferences;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
-import android.graphics.Point;
 import android.os.AsyncTask;
 import android.os.Handler;
+import android.preference.PreferenceManager;
 import android.service.wallpaper.WallpaperService;
 import android.util.Log;
-import android.view.Display;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
-import android.view.WindowManager;
 
 class DrawingPosition {
 	float x;
@@ -38,20 +36,21 @@ class DrawingPosition {
 }
 
 public class LSystemDrawingService extends WallpaperService {
-
+	
 	@Override
 	public Engine onCreateEngine() {
 		return new LSystemDrawingEngine();
 	}
 	
 	public enum DrawingState {
-		CALCULATE,
+		PREPARE,
 		ERROR,
 		DRAW,
 		FADE
 	}
 	
-	private class LSystemDrawingEngine extends Engine {
+	private class LSystemDrawingEngine extends Engine 
+		implements SharedPreferences.OnSharedPreferenceChangeListener {
 		
 		private final Handler handler = new Handler();
 		private final Runnable drawRunner = new Runnable() {
@@ -75,7 +74,7 @@ public class LSystemDrawingService extends WallpaperService {
 		private List<Path> tailLines;
 		private Path currentTailLine;
 		
-		DrawingState state = DrawingState.CALCULATE;
+		DrawingState state = DrawingState.PREPARE;
 		private int calculationCount = 0;
 		
 		private Paint tailPaint = new Paint();
@@ -113,13 +112,18 @@ public class LSystemDrawingService extends WallpaperService {
 			}
 		}
 		
-		public LSystemDrawingEngine() {					
-			getPreferences();
+		private SharedPreferences preferences;
+		
+		public LSystemDrawingEngine() { 
+			preferences = LSystemDrawingService.this.getSharedPreferences(WallpaperPreferencesActivity.name, MODE_PRIVATE);
+            preferences.registerOnSharedPreferenceChangeListener(this);
+			
+			readPreferences();
 			new LSystemGenerator().execute(lsDesc);
 			handler.post(drawRunner);
 		}
 		
-		private void getPreferences() {
+		private void readPreferences() {
 			tailPaint.setAntiAlias(true);
 			tailPaint.setColor(Color.GRAY);
 			tailPaint.setStyle(Paint.Style.STROKE);
@@ -130,26 +134,10 @@ public class LSystemDrawingService extends WallpaperService {
 			headPaint.setStyle(Paint.Style.STROKE);
 			headPaint.setStrokeWidth(5f);
 			
-			lsDesc = new LSystemDescription();
-			lsDesc.name = "hilbert";
-			lsDesc.functions = new String[3];
-			lsDesc.functions[0] = "f::20";
-			lsDesc.functions[1] = "l:+rf-lfl-fr+:0";
-			lsDesc.functions[2] = "r:-lf+rfr+fl-:0";
-			lsDesc.startState = "l";
-			lsDesc.iterations = 5;
-			lsDesc.turnAngle = 90.0f;
+			String lsystemName = preferences.getString(WallpaperPreferencesActivity.lsystemKeyName, 
+					WallpaperPreferencesActivity.lsystemDefaultValue);
 			
-			/*
-			LSystemDescription lsDesc = new LSystemDescription();
-			lsDesc.name = "tree";
-			lsDesc.functions = new String[2];
-			lsDesc.functions[0] = "f:g[-f][+f][gf]:10";
-			lsDesc.functions[1] = "g:gg:10";
-			lsDesc.startState = "f";
-			lsDesc.iterations = 5;
-			lsDesc.turnAngle = 45.0f;
-			*/
+			lsDesc = LSystemCatalogue.get(lsystemName);
 		}
 
 		@Override
@@ -188,7 +176,8 @@ public class LSystemDrawingService extends WallpaperService {
 				canvas = holder.lockCanvas();
 				if (canvas != null) {
 					canvas.drawColor(Color.BLACK);
-					if (state == DrawingState.CALCULATE) {
+					if (state == DrawingState.PREPARE) {
+						// TODO: Replace this with something more interesting
 						canvas.drawLine(50, 200, 50, 200 + calculationCount, headPaint);
 						calculationCount++;
 					} else if (state == DrawingState.DRAW) {
@@ -420,6 +409,34 @@ public class LSystemDrawingService extends WallpaperService {
 			currentTailLine.moveTo(drawPos.x, drawPos.y);
 			tailLines = new LinkedList<Path>();
 			tailLines.add(currentTailLine);
+		}
+		
+		public void reset() {
+			visible = true;
+			lsystem = null;
+			currentCommand = 0;
+			
+			drawPos = null;
+			drawPosStack = new LinkedList<DrawingPosition>();;
+			
+			originDrawPos = null;
+			
+			state = DrawingState.PREPARE;
+			calculationCount = 0;
+			
+			tailPaint = new Paint();
+			headPaint = new Paint();
+			
+			readPreferences();
+			new LSystemGenerator().execute(lsDesc);
+		}
+
+		@Override
+		public void onSharedPreferenceChanged(
+				SharedPreferences sharedPreferences, String key) {
+			if (key != null && key.equals(WallpaperPreferencesActivity.lsystemKeyName)) {
+				reset();
+			}
 		}
 	} 
 }

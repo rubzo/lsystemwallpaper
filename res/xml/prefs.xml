@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
-  <EditTextPreference android:key="iterations"
-    android:title="Iteration Level"></EditTextPreference>
-  <EditTextPreference android:key="angle"
-    android:title="Turn Angle"></EditTextPreference>
-  <EditTextPreference android:key="startState"
-    android:title="Start State"></EditTextPreference>
+  <ListPreference android:key="lsystem"
+    android:title="L-System"
+    android:dialogTitle="Pick an L-System"
+    android:entries="@array/pref_lsystem_entries"
+    android:entryValues="@array/pref_lsystem_values"
+    android:defaultValue="hilbert"></ListPreference>
 </PreferenceScreen> 

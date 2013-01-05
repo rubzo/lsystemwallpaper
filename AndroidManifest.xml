@@ -32,7 +32,7 @@
         </service>
 
         <activity
-            android:name=".MyPreferencesActivity"
+            android:name="eu.whrl.lsystemwallpaper.WallpaperPreferencesActivity"
             android:exported="true"
             android:label="@string/app_name">
         </activity>
