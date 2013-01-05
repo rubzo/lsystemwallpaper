@@ -17,6 +17,8 @@ import android.view.SurfaceHolder;
 
 public class LSystemDrawingService extends WallpaperService {
 	
+	public static final String TAG = "LSystemLW";
+	
 	@Override
 	public Engine onCreateEngine() {
 		return new LSystemDrawingEngine();
@@ -70,10 +72,13 @@ public class LSystemDrawingService extends WallpaperService {
 		
 		class LSystemGenerator extends AsyncTask<LSystemDescription,Void,LSystem> {
 
+			private long generateLSystemStartTime;
+			
 			@Override
 			protected LSystem doInBackground(LSystemDescription... params) {
 				if (params.length == 1) { 
 					LSystemDescription d = params[0];
+					generateLSystemStartTime = System.currentTimeMillis();
 					LSystem lsystem = new LSystem(d.iterations, 
 							d.turnAngle, 
 							d.startState, 
@@ -87,7 +92,14 @@ public class LSystemDrawingService extends WallpaperService {
 			protected void onPostExecute(LSystem l) {
 				if (l != null) {
 					lsystem = l;
+					long generateLSystemEndTime = System.currentTimeMillis();
+					Log.d(LSystemDrawingService.TAG,
+							String.format("Took %.4fs to generate LSystem", (generateLSystemEndTime - generateLSystemStartTime)/1000.0f));
+					long prepareForDrawingStartTime = System.currentTimeMillis();
 					prepareForDrawing();
+					long prepareForDrawingEndTime = System.currentTimeMillis();
+					Log.d(LSystemDrawingService.TAG,
+							String.format("Took %.4fs to prepare for drawing", (prepareForDrawingEndTime - prepareForDrawingStartTime)/1000.0f));
 					state = DrawingState.DRAW;
 				} else {
 					state = DrawingState.ERROR;
@@ -172,15 +184,11 @@ public class LSystemDrawingService extends WallpaperService {
 			Canvas canvas = null;
 			try {
 				canvas = holder.lockCanvas();
+				canvas.drawColor(bgColor);
 				if (canvas != null) {
-					if (state == DrawingState.PREPARE) {
-						canvas.drawColor(Color.rgb(calculationCount, calculationCount, calculationCount));
-						calculationCount++;
-					} else if (state == DrawingState.DRAW) {
-						canvas.drawColor(bgColor);
+					if (state == DrawingState.DRAW) {
 						drawLSystem(canvas);
 					} else if (state == DrawingState.FADE) {
-						canvas.drawColor(bgColor);
 						fadeLSystem(canvas);
 					}
 				}
