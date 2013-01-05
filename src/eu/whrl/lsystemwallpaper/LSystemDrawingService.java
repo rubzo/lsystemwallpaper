@@ -158,14 +158,14 @@ public class LSystemDrawingService extends WallpaperService {
 			try {
 				canvas = holder.lockCanvas();
 				if (canvas != null) {
-					canvas.drawColor(Color.BLACK);
 					if (state == DrawingState.PREPARE) {
-						// TODO: Replace this with something more interesting
-						canvas.drawLine(50, 200, 50, 200 + calculationCount, headPaint);
+						canvas.drawColor(Color.rgb(calculationCount, calculationCount, calculationCount));
 						calculationCount++;
 					} else if (state == DrawingState.DRAW) {
+						canvas.drawColor(Color.BLACK);
 						drawLSystem(canvas);
 					} else if (state == DrawingState.FADE) {
+						canvas.drawColor(Color.BLACK);
 						fadeLSystem(canvas);
 					}
 				}
