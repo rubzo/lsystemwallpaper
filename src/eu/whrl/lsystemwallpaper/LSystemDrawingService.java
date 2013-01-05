@@ -59,6 +59,7 @@ public class LSystemDrawingService extends WallpaperService {
 		
 		private Paint tailPaint;
 		private Paint headPaint;
+		private int bgColor;
 		
 		private int savedWidth;
 		private float scalingFactor;
@@ -107,16 +108,30 @@ public class LSystemDrawingService extends WallpaperService {
 		}
 		
 		private void readPreferences() {
+			// Pick tail color
 			tailPaint.setAntiAlias(true);
-			tailPaint.setColor(Color.GRAY);
 			tailPaint.setStyle(Paint.Style.STROKE);
 			tailPaint.setStrokeWidth(4f);
 			
+			String tailPaintColor = preferences.getString(WallpaperPreferencesActivity.tailColorKeyName, 
+					WallpaperPreferencesActivity.tailColorDefaultValue);
+			tailPaint.setColor(Color.parseColor("#" + tailPaintColor));
+			
+			// Pick head/turtle color
 			headPaint.setAntiAlias(true);
-			headPaint.setColor(Color.MAGENTA);
 			headPaint.setStyle(Paint.Style.STROKE);
 			headPaint.setStrokeWidth(5f);
 			
+			String headPaintColor = preferences.getString(WallpaperPreferencesActivity.headColorKeyName, 
+					WallpaperPreferencesActivity.headColorDefaultValue);
+			headPaint.setColor(Color.parseColor("#" + headPaintColor));
+			
+			// Pick background color
+			String bgColorHex = preferences.getString(WallpaperPreferencesActivity.bgColorKeyName, 
+					WallpaperPreferencesActivity.bgColorDefaultValue);
+			bgColor = Color.parseColor("#" + bgColorHex);
+			
+			// Pick L-System
 			String lsystemName = preferences.getString(WallpaperPreferencesActivity.lsystemKeyName, 
 					WallpaperPreferencesActivity.lsystemDefaultValue);
 			
@@ -162,10 +177,10 @@ public class LSystemDrawingService extends WallpaperService {
 						canvas.drawColor(Color.rgb(calculationCount, calculationCount, calculationCount));
 						calculationCount++;
 					} else if (state == DrawingState.DRAW) {
-						canvas.drawColor(Color.BLACK);
+						canvas.drawColor(bgColor);
 						drawLSystem(canvas);
 					} else if (state == DrawingState.FADE) {
-						canvas.drawColor(Color.BLACK);
+						canvas.drawColor(bgColor);
 						fadeLSystem(canvas);
 					}
 				}
@@ -417,7 +432,12 @@ public class LSystemDrawingService extends WallpaperService {
 		@Override
 		public void onSharedPreferenceChanged(
 				SharedPreferences sharedPreferences, String key) {
-			if (key != null && key.equals(WallpaperPreferencesActivity.lsystemKeyName)) {
+			if (key != null && 
+					(key.equals(WallpaperPreferencesActivity.lsystemKeyName)
+					|| key.equals(WallpaperPreferencesActivity.headColorKeyName)
+					|| key.equals(WallpaperPreferencesActivity.tailColorKeyName)
+					|| key.equals(WallpaperPreferencesActivity.bgColorKeyName)
+							) ) {
 				initOrReset();
 			}
 		}

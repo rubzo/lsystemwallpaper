@@ -6,4 +6,16 @@
     android:entries="@array/pref_lsystem_entries"
     android:entryValues="@array/pref_lsystem_values"
     android:defaultValue="hilbert"></ListPreference>
+  <EditTextPreference android:key="headcolor"
+      android:title="Turtle Color"
+      android:dialogTitle="Turtle Color (RGB; Hex)"
+      android:defaultValue="FFFFFF"></EditTextPreference>
+  <EditTextPreference android:key="tailcolor"
+      android:title="Line Color"
+      android:dialogTitle="Line Color (RGB; Hex)"
+      android:defaultValue="444444"></EditTextPreference>
+  <EditTextPreference android:key="bgcolor"
+      android:title="Background Color"
+      android:dialogTitle="Background Color (RGB; Hex)"
+      android:defaultValue="AAAAAA"></EditTextPreference>
 </PreferenceScreen> 
