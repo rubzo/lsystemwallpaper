@@ -5,12 +5,28 @@
     <string name="launcher_description">The L-System Live Wallpaper - create pretty backgrounds using L-Systems!</string>
     <string name="launcher_button_text">Install Live Wallpaper</string>
     <string-array name="pref_lsystem_entries">
-        <item >Hilbert Curve</item>
-        <item >Basic Tree</item>
+        <item >Hilbert Curve (5)</item>
+        <item >Basic Tree (5)</item>
+        <item >Koch Curve (3)</item>
+        <item >Sierpinski Triangle (5)</item>
+        <item >Dragon Curve (10)</item>
+        <item >Levy C Curve (8)</item>
+        <item >Peano-Gosper (4)</item>
+        <item >Cross (2)</item>
+        <item >32-Segment (1)</item>
+        <item >Snowflake (4)</item>
     </string-array>
     <string-array name="pref_lsystem_values">
         <item >hilbert</item>
         <item >tree</item>
+        <item >kochcurve</item>
+        <item >sierpinski</item>
+        <item >dragoncurve</item>
+        <item >levyccurve</item>
+        <item >peanogosper</item>
+        <item >cross</item>
+        <item >32segment</item>
+        <item >snowflake</item>
     </string-array>
 
 </resources>
