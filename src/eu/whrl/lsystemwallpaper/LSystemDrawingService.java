@@ -10,30 +10,10 @@ import android.graphics.Paint;
 import android.graphics.Path;
 import android.os.AsyncTask;
 import android.os.Handler;
-import android.preference.PreferenceManager;
 import android.service.wallpaper.WallpaperService;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
-
-class DrawingPosition {
-	float x;
-	float y;
-	float angle;
-	public DrawingPosition() {
-		x = 0;
-		y = 0;
-		angle = 0;
-	}
-	public DrawingPosition(float x, float y, float a) {
-		this.x = x;
-		this.y = y;
-		this.angle = a;
-	}
-	public DrawingPosition copy() {
-		return new DrawingPosition(x, y, angle);
-	}
-}
 
 public class LSystemDrawingService extends WallpaperService {
 	
@@ -61,29 +41,31 @@ public class LSystemDrawingService extends WallpaperService {
 
 		};
 		
-		private boolean visible = true;
+		private boolean visible;
 
-		private LSystem lsystem = null;
-		private int currentCommand = 0;
+		private LSystem lsystem;
+		private int currentCommand;
 		
-		private DrawingPosition drawPos = null;
-		private List<DrawingPosition> drawPosStack = new LinkedList<DrawingPosition>();;
+		private DrawingPosition drawPos;
+		private List<DrawingPosition> drawPosStack = new LinkedList<DrawingPosition>();
 		
-		private DrawingPosition originDrawPos = null;
+		private DrawingPosition originDrawPos;
 		
 		private List<Path> tailLines;
 		private Path currentTailLine;
 		
-		DrawingState state = DrawingState.PREPARE;
-		private int calculationCount = 0;
+		private DrawingState state;
+		private int calculationCount;
 		
-		private Paint tailPaint = new Paint();
-		private Paint headPaint = new Paint();
+		private Paint tailPaint;
+		private Paint headPaint;
 		
 		private int savedWidth;
 		private float scalingFactor;
 		
 		private LSystemDescription lsDesc;
+		
+		private SharedPreferences preferences;
 		
 		class LSystemGenerator extends AsyncTask<LSystemDescription,Void,LSystem> {
 
@@ -112,14 +94,15 @@ public class LSystemDrawingService extends WallpaperService {
 			}
 		}
 		
-		private SharedPreferences preferences;
-		
-		public LSystemDrawingEngine() { 
+		public LSystemDrawingEngine() {
+			// Get our preferences, and make sure we know if anything changes.
 			preferences = LSystemDrawingService.this.getSharedPreferences(WallpaperPreferencesActivity.name, MODE_PRIVATE);
             preferences.registerOnSharedPreferenceChangeListener(this);
 			
-			readPreferences();
-			new LSystemGenerator().execute(lsDesc);
+            // Call the real constructor
+			initOrReset();
+			
+			// Set our drawing handler
 			handler.post(drawRunner);
 		}
 		
@@ -411,13 +394,13 @@ public class LSystemDrawingService extends WallpaperService {
 			tailLines.add(currentTailLine);
 		}
 		
-		public void reset() {
+		public void initOrReset() {
 			visible = true;
 			lsystem = null;
 			currentCommand = 0;
 			
 			drawPos = null;
-			drawPosStack = new LinkedList<DrawingPosition>();;
+			drawPosStack = new LinkedList<DrawingPosition>();
 			
 			originDrawPos = null;
 			
@@ -435,7 +418,7 @@ public class LSystemDrawingService extends WallpaperService {
 		public void onSharedPreferenceChanged(
 				SharedPreferences sharedPreferences, String key) {
 			if (key != null && key.equals(WallpaperPreferencesActivity.lsystemKeyName)) {
-				reset();
+				initOrReset();
 			}
 		}
 	} 

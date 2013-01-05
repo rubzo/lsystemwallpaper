@@ -31,6 +31,7 @@ public class LSystemCatalogue {
 		add(lsDesc);
 	}
 	
+	// TODO make this throw an exception
 	public static LSystemDescription get(String name) {
 		if (catalogue.containsKey(name)) {
 			return catalogue.get(name);
