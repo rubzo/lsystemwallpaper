@@ -3,6 +3,8 @@ package eu.whrl.lsystemwallpaper;
 import java.util.HashMap;
 import java.util.Map;
 
+import android.util.Log;
+
 public class LSystem {
 	
 	/*
@@ -58,6 +60,10 @@ public class LSystem {
 	private float turnAngle;
 	private String seed;
 	
+	private int initMaxTmpCommandsContSize = 64;
+	private Command[] tmpCommands;
+	private int tmpCommandsContSize;
+	
 	/*
 	 * Constructor.
 	 */
@@ -71,6 +77,9 @@ public class LSystem {
 		
 		turnAngle = angle;
 		this.seed = seed;
+		
+		tmpCommands = new Command[initMaxTmpCommandsContSize];
+		tmpCommandsContSize = 0;
 		
 		for (String function : functions) {
 			readFunction(function);
@@ -128,8 +137,13 @@ public class LSystem {
 	
 	
 	public void produceCommands(int iterations) {
-		commands = readCommands(seed); 
+		Command[] seedCommands = readCommands(seed);
+		for (int i = 0; i < seedCommands.length; i++) {
+			tmpCommands[i] = seedCommands[i];
+		}
+		tmpCommandsContSize = seedCommands.length;
 		expand(iterations);
+		saveTemporaryCommands();
 	}
 	
 	private Command[] fetchFromFunctionStore(String name, int n) {
@@ -145,9 +159,9 @@ public class LSystem {
 	private void expand(int n) {
 		int i = 0;
 		
-		while (i < commands.length) {
+		while (i < tmpCommandsContSize) {
 			
-			Command command = commands[i];
+			Command command = tmpCommands[i];
 			
 			if (command instanceof Expand) {
 				Command[] newCommands = fetchFromFunctionStore(((Expand)command).name, n);
@@ -164,24 +178,33 @@ public class LSystem {
 	}
 	
 	private void insertNewCommands(int insertionPoint, Command[] newCommands) {
-		Command[] fullCommands = new Command[commands.length + newCommands.length - 1];
-		
-		// Copy before
-		for (int i = 0; i < insertionPoint; i++) {
-			fullCommands[i] = commands[i];
+		if ((tmpCommandsContSize + newCommands.length - 1) > tmpCommands.length) {
+			Log.d(LSystemDrawingService.TAG, "Expanding temporary command container... " + tmpCommands.length*2);
+			Command[] largerTmpCommands = new Command[tmpCommands.length*2];
+			for (int i = 0; i < tmpCommandsContSize; i++) {
+				largerTmpCommands[i] = tmpCommands[i];
+			}
+			tmpCommands = largerTmpCommands;
 		}
 		
+		// Shunt everything after the expansion forward
+		for (int i = tmpCommandsContSize-1; i > insertionPoint; i--) {
+			tmpCommands[i + newCommands.length - 1] = tmpCommands[i];
+		}
+				
 		// Expand
 		for (int i = 0; i < newCommands.length; i++) {
-			fullCommands[insertionPoint + i] = newCommands[i];
+			tmpCommands[insertionPoint + i] = newCommands[i];
 		}
 		
-		// Copy after
-		for (int i = insertionPoint+1; i < commands.length; i++) {
-			fullCommands[i + newCommands.length - 1] = commands[i];
+		tmpCommandsContSize += (newCommands.length - 1);
+	}
+	
+	private void saveTemporaryCommands() {
+		commands = new Command[tmpCommandsContSize];
+		for (int i = 0; i < tmpCommandsContSize; i++) {
+			commands[i] = tmpCommands[i];
 		}
-		
-		commands = fullCommands;
 	}
 
 	public void printCommands() {
