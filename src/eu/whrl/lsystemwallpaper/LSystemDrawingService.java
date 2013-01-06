@@ -57,7 +57,6 @@ public class LSystemDrawingService extends WallpaperService {
 		private Path currentTailLine;
 		
 		private DrawingState state;
-		private int calculationCount;
 		
 		private Paint tailPaint;
 		private Paint headPaint;
@@ -69,6 +68,8 @@ public class LSystemDrawingService extends WallpaperService {
 		private LSystemDescription lsDesc;
 		
 		private SharedPreferences preferences;
+		
+		private int refreshSpeed;
 		
 		class LSystemGenerator extends AsyncTask<LSystemDescription,Void,LSystem> {
 
@@ -112,6 +113,8 @@ public class LSystemDrawingService extends WallpaperService {
 			preferences = LSystemDrawingService.this.getSharedPreferences(WallpaperPreferencesActivity.name, MODE_PRIVATE);
             preferences.registerOnSharedPreferenceChangeListener(this);
 			
+            refreshSpeed = Integer.parseInt(preferences.getString(WallpaperPreferencesActivity.refreshSpeedKeyName, "200"));
+            
             // Call the real constructor
 			initOrReset();
 			
@@ -124,24 +127,16 @@ public class LSystemDrawingService extends WallpaperService {
 			tailPaint.setAntiAlias(true);
 			tailPaint.setStyle(Paint.Style.STROKE);
 			tailPaint.setStrokeWidth(4f);
-			
-			String tailPaintColor = preferences.getString(WallpaperPreferencesActivity.tailColorKeyName, 
-					WallpaperPreferencesActivity.tailColorDefaultValue);
-			tailPaint.setColor(Color.parseColor("#" + tailPaintColor));
+			tailPaint.setColor(preferences.getInt(WallpaperPreferencesActivity.tailColorKeyName, Color.WHITE));
 			
 			// Pick head/turtle color
 			headPaint.setAntiAlias(true);
 			headPaint.setStyle(Paint.Style.STROKE);
 			headPaint.setStrokeWidth(5f);
-			
-			String headPaintColor = preferences.getString(WallpaperPreferencesActivity.headColorKeyName, 
-					WallpaperPreferencesActivity.headColorDefaultValue);
-			headPaint.setColor(Color.parseColor("#" + headPaintColor));
+			headPaint.setColor(preferences.getInt(WallpaperPreferencesActivity.headColorKeyName, Color.GREEN));
 			
 			// Pick background color
-			String bgColorHex = preferences.getString(WallpaperPreferencesActivity.bgColorKeyName, 
-					WallpaperPreferencesActivity.bgColorDefaultValue);
-			bgColor = Color.parseColor("#" + bgColorHex);
+			bgColor = preferences.getInt(WallpaperPreferencesActivity.bgColorKeyName, Color.BLACK);
 			
 			// Pick L-System
 			String lsystemName = preferences.getString(WallpaperPreferencesActivity.lsystemKeyName, 
@@ -198,7 +193,7 @@ public class LSystemDrawingService extends WallpaperService {
 			}
 			handler.removeCallbacks(drawRunner);
 			if (visible) {
-				handler.postDelayed(drawRunner, 200);
+				handler.postDelayed(drawRunner, refreshSpeed);
 			}
 		}
 		
@@ -428,7 +423,6 @@ public class LSystemDrawingService extends WallpaperService {
 			originDrawPos = null;
 			
 			state = DrawingState.PREPARE;
-			calculationCount = 0;
 			
 			tailPaint = new Paint();
 			headPaint = new Paint();
@@ -447,6 +441,8 @@ public class LSystemDrawingService extends WallpaperService {
 					|| key.equals(WallpaperPreferencesActivity.bgColorKeyName)
 							) ) {
 				initOrReset();
+			} else if (key != null && key.equals(WallpaperPreferencesActivity.refreshSpeedKeyName)) {
+				refreshSpeed = Integer.parseInt(sharedPreferences.getString(WallpaperPreferencesActivity.refreshSpeedKeyName, "200"));
 			}
 		}
 	} 

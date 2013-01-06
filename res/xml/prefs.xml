@@ -2,20 +2,29 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
   <ListPreference android:key="lsystem"
     android:title="L-System"
-    android:dialogTitle="Pick an L-System"
+    android:dialogTitle="L-System"
+     android:summary="The formula that produces the pattern"
     android:entries="@array/pref_lsystem_entries"
     android:entryValues="@array/pref_lsystem_values"
     android:defaultValue="hilbert"></ListPreference>
-  <EditTextPreference android:key="headcolor"
-      android:title="Turtle Color"
-      android:dialogTitle="Turtle Color (RGB; Hex)"
-      android:defaultValue="FFFFFF"></EditTextPreference>
-  <EditTextPreference android:key="tailcolor"
-      android:title="Line Color"
-      android:dialogTitle="Line Color (RGB; Hex)"
-      android:defaultValue="444444"></EditTextPreference>
-  <EditTextPreference android:key="bgcolor"
-      android:title="Background Color"
-      android:dialogTitle="Background Color (RGB; Hex)"
-      android:defaultValue="AAAAAA"></EditTextPreference>
+  <EditTextPreference android:key="refreshspeed"
+      android:title="Refresh Speed"
+      android:dialogTitle="Refresh Speed"
+      android:summary="Time between each update, in milliseconds"
+      android:defaultValue="200"></EditTextPreference>
+  <net.margaritov.preference.colorpicker.ColorPickerPreference
+    android:key="headcolor"
+    android:title="Turtle Color"
+    android:summary="The turtle that draws the line"
+    android:defaultValue="@integer/green" />
+  <net.margaritov.preference.colorpicker.ColorPickerPreference
+    android:key="tailcolor"
+    android:title="Line Color"
+    android:summary="The line the turtle leaves behind"
+    android:defaultValue="@integer/white" />
+  <net.margaritov.preference.colorpicker.ColorPickerPreference
+    android:key="bgcolor"
+    android:title="Background Color"
+    android:summary="The color of the background"
+    android:defaultValue="@integer/black" />
 </PreferenceScreen> 

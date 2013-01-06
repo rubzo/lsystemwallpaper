@@ -28,5 +28,6 @@
         <item >32segment</item>
         <item >snowflake</item>
     </string-array>
-
+	<string name="dialog_color_picker">Color Picker</string>
+    <string name="press_color_to_apply">Press on Color to apply</string>
 </resources>
