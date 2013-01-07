@@ -10,6 +10,7 @@
         <item >Koch Curve (3)</item>
         <item >Sierpinski Triangle (5)</item>
         <item >Dragon Curve (10)</item>
+        <item >Fractal Plant (4)</item>
         <item >Levy C Curve (8)</item>
         <item >Peano-Gosper (4)</item>
         <item >Cross (2)</item>
@@ -22,6 +23,7 @@
         <item >kochcurve</item>
         <item >sierpinski</item>
         <item >dragoncurve</item>
+        <item >fractalplant</item>
         <item >levyccurve</item>
         <item >peanogosper</item>
         <item >cross</item>
